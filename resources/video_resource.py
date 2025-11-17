@@ -36,7 +36,7 @@ def search_videos_proxy(
         res = requests.get(
             f"{SEARCH_SERVICE_URL}/search/videos",
             params=params,
-            headers={"Authorization": f"Bearer {user['uid']}"},
+            headers={"Authorization": f"Bearer {user['token']}"},
             timeout=5
         )
 
@@ -68,4 +68,3 @@ def search_videos_proxy(
         raise HTTPException(status_code=504, detail="Search microservice timeout")
     except requests.exceptions.ConnectionError:
         raise HTTPException(status_code=503, detail="Search microservice unavailable")
-

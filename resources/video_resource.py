@@ -6,13 +6,14 @@ import os
 router = APIRouter()
 
 SEARCH_SERVICE_URL = os.getenv("SEARCH_SERVICE_URL")
+VIDEO_COMPOSITE_URL = os.getenv("VIDEO_COMPOSITE_URL")
 
-
+# 1. SEARCH ENDPOINT
 @router.get("/videos/search")
 def search_videos_proxy(
     q: str = Query(None),
-    course_id: str = Query(None),          # support course_id
-    offering_id: int = Query(None),        # optional, if needed
+    course_id: str = Query(None),
+    offering_id: int = Query(None),
     prof: str = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -27,7 +28,6 @@ def search_videos_proxy(
     if not SEARCH_SERVICE_URL:
         raise HTTPException(status_code=500, detail="SEARCH_SERVICE_URL not set")
 
-    # Build outbound params
     params = {
         "q": q,
         "course_id": course_id,
@@ -37,11 +37,9 @@ def search_videos_proxy(
         "offset": offset
     }
 
-    # Remove None values
     params = {k: v for k, v in params.items() if v is not None}
 
     try:
-        # Call Search Microservice
         res = requests.get(
             f"{SEARCH_SERVICE_URL}/search/videos",
             params=params,
@@ -54,7 +52,6 @@ def search_videos_proxy(
 
         data = res.json()
 
-        # Normalize structure into flattened form
         if isinstance(data, dict) and "items" in data:
             flattened = {
                 "items": data.get("items", []),
@@ -63,10 +60,8 @@ def search_videos_proxy(
                 "links": data.get("links", []),
             }
         else:
-            # Fallback (raw list)
             flattened = {"items": data, "links": []}
 
-        # Add self link
         flattened["links"].append({
             "rel": "self",
             "href": (
@@ -86,3 +81,39 @@ def search_videos_proxy(
 
     except requests.exceptions.ConnectionError:
         raise HTTPException(status_code=503, detail="Search microservice unavailable")
+
+
+# 2. GET SINGLE VIDEO METADATA
+@router.get("/videos/{video_id}")
+def get_single_video(
+    video_id: str,
+    user=Depends(verify_token)
+):
+    """
+    Fetch metadata for a single video by forwarding to Video Composite Service.
+    UI uses this when user clicks "Watch Video".
+    """
+
+    if not VIDEO_COMPOSITE_URL:
+        raise HTTPException(status_code=500, detail="VIDEO_COMPOSITE_URL not set")
+
+    try:
+        res = requests.get(
+            f"{VIDEO_COMPOSITE_URL}/videos/{video_id}",
+            headers={"Authorization": f"Bearer {user['token']}"},
+            timeout=5
+        )
+
+        if res.status_code != 200:
+            raise HTTPException(status_code=res.status_code, detail=res.text)
+
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Video composite timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail="Video composite service unavailable"
+        )

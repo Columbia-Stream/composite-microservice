@@ -54,7 +54,7 @@ def signup_user(
                 status_code=res.status_code,
                 detail=error_detail.get("detail", "Unknown error during user signup.")
             )
-        return res
+        return res.json()
 
     except requests.exceptions.Timeout:
         raise HTTPException(status_code=504, detail="Auth microservice timeout")

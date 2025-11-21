@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, Form
 from utils.auth import verify_token
 import requests
 import os
+from models.upload import VideoUpload
 
 router = APIRouter()
 
@@ -10,9 +11,7 @@ UPLOAD_SERVICE_URL = os.getenv("UPLOAD_SERVICE_URL")
 @router.post("/videos/start_upload")
 async def upload_video(
     # file: UploadFile,
-    offering_id: int = Form(...),
-    prof_uni: str = Form(...),
-    videoTitle: str = Form(...)
+    uploadBody: VideoUpload
 ):
     """
     Composite layer Upload endpoint.
@@ -23,9 +22,9 @@ async def upload_video(
         raise HTTPException(status_code=500, detail="UPLOAD_SERVICE_URL not set")
 
     body = {
-        "offering_id": offering_id,
-        "prof_uni": prof_uni,
-        "videoTitle": videoTitle,
+        "offering_id": uploadBody.offering_id,
+        "prof_uni": uploadBody.prof_uni,
+        "videoTitle": uploadBody.videoTitle,
     }
     try:
         # Call Search Microservice

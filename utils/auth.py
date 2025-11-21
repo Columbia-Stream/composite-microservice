@@ -31,7 +31,7 @@ def verify_token(authorization: str = Header(None)):
 
     try:
         # Call the AUTH service to verify the token
-        res = requests.get(AUTH_URL, headers={"Authorization": authorization}, timeout=5)
+        res = requests.get(f"{AUTH_URL}/auth/verify-token", headers={"Authorization": authorization}, timeout=5)
 
         print(f"[DEBUG] Auth responded with status: {res.status_code}")
         print(f"[DEBUG] Auth response body: {res.text}")

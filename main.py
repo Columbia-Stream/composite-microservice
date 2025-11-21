@@ -24,8 +24,10 @@ app.add_middleware(
 
 from resources.video_resource import router as video_router
 from resources.auth_resource import router as auth_router
+from resources.upload_resource import router as upload_router
 app.include_router(video_router)
 app.include_router(auth_router)
+app.include_router(upload_router)
 
 @app.get("/")
 def root():

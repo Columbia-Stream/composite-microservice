@@ -8,3 +8,6 @@ class SignupRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr        # ensures valid email format
     password: str
+
+class UserDetailsRequest(BaseModel):
+    uni: str

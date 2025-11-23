@@ -3,7 +3,7 @@ from utils.auth import verify_token
 import requests
 import os
 import json
-from models.auth import SignupRequest, LoginRequest
+from models.auth import SignupRequest, LoginRequest, UserDetailsRequest
 
 router = APIRouter()
 
@@ -81,6 +81,38 @@ def login_user(user: LoginRequest):
         # Call Search Microservice
         res = requests.post(
             f"{AUTH_SERVICE_URL}/auth/login",
+            json=body,
+            timeout=5
+        )
+        if res.status_code != 200:
+            raise HTTPException(status_code=res.status_code, detail="Login Failed")
+        print(res.json())
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Auth microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Auth microservice unavailable")
+
+
+@router.get("/auth/get-user")
+def login_user(user: UserDetailsRequest):
+    """
+    Composite layer Auth endpoint.
+    request forwarded to Auth Microservice.
+    """
+
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+
+    body = {
+        uni: user.uni
+    }
+    try:
+        # Call Search Microservice
+        res = requests.post(
+            f"{AUTH_SERVICE_URL}/auth/get-user",
             json=body,
             timeout=5
         )

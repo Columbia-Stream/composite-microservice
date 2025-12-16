@@ -3,7 +3,7 @@ from utils.auth import verify_token
 import requests
 import os
 import json
-from models.auth import SignupRequest, LoginRequest, UserDetailsRequest
+from models.auth import SignupRequest, LoginRequest, UserDetailsRequest, UpdateRoleRequest
 
 router = APIRouter()
 
@@ -103,7 +103,7 @@ def handle_oauth(
     Composite layer Auth endpoint.
     request forwarded to Auth Microservice.
     """
-    # print(f"[DEBUG] Received Authorization header: {authorization}")
+    print(f"[DEBUG] Received Authorization header:{AUTH_SERVICE_URL}")
     if not AUTH_SERVICE_URL:
         raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
 
@@ -135,6 +135,40 @@ def handle_oauth(
                 detail=error_detail.get("detail", "Unknown error during user google oauth.")
             )
         print(res.json())
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Auth microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Auth microservice unavailable")
+
+@router.put("/auth/update-role")
+def update_role(
+    user: UpdateRoleRequest
+):
+   
+    """
+    Composite layer Auth endpoint.
+    request forwarded to Auth Microservice.
+    """
+
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+
+    body = {
+        'email': user.email,
+        'role': user.role
+    }
+    try:
+        # Call Search Microservice
+        res = requests.put(
+            f"{AUTH_SERVICE_URL}/auth/update-role",
+            json=body,
+            timeout=5
+        )
+
+        
         return res.json()
 
     except requests.exceptions.Timeout:

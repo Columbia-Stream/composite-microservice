@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Header, Query, HTTPException
 from utils.auth import verify_token
 import requests
 import os
@@ -86,6 +86,54 @@ def login_user(user: LoginRequest):
         )
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Login Failed")
+        print(res.json())
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Auth microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Auth microservice unavailable")
+
+@router.post("/auth/handle-oauth")
+def handle_oauth(
+    authorization: str = Header(None)
+):
+    """
+    Composite layer Auth endpoint.
+    request forwarded to Auth Microservice.
+    """
+    # print(f"[DEBUG] Received Authorization header: {authorization}")
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+
+    
+    try:
+        # Call Search Microservice
+        res = requests.post(
+            f"{AUTH_SERVICE_URL}/auth/handle-oauth",
+            headers={"Authorization": authorization},
+            timeout=5
+        )
+
+        if res.status_code != 200 and res.status_code != 201:
+            print(f"[DEBUG] OAuth handling failed with status: {res.status_code == 201}")
+            # 2. Extract the response text (which should be the Auth Service's JSON error)
+            error_text = res.text 
+            
+            # 3. Attempt to parse the error text back into a Python dictionary
+            try:
+                error_detail = res.json()
+            except json.JSONDecodeError:
+                # If the response isn't valid JSON, use the raw text
+                error_detail = {"detail": error_text}
+            
+            # 4. Re-raise the error with the original status code and detail.
+            # This stops the processing in the calling service and sends the clean error back to the frontend.
+            raise HTTPException(
+                status_code=res.status_code,
+                detail=error_detail.get("detail", "Unknown error during user google oauth.")
+            )
         print(res.json())
         return res.json()
 

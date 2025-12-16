@@ -179,7 +179,7 @@ def update_role(
 
 
 @router.get("/auth/get-user")
-def login_user(user: UserDetailsRequest):
+def get_user(user: UserDetailsRequest):
     """
     Composite layer Auth endpoint.
     request forwarded to Auth Microservice.
@@ -196,6 +196,33 @@ def login_user(user: UserDetailsRequest):
         res = requests.post(
             f"{AUTH_SERVICE_URL}/auth/get-user",
             json=body,
+            timeout=5
+        )
+
+        
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Auth microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Auth microservice unavailable")
+
+
+@router.get("/auth/get-profs")
+def get_profs():
+    """
+    Composite layer Auth endpoint.
+    request forwarded to Auth Microservice.
+    """
+
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+
+    
+    try:
+        res = requests.get(
+            f"{AUTH_SERVICE_URL}/auth/get-profs",
             timeout=5
         )
 

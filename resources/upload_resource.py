@@ -101,7 +101,7 @@ async def upload_video(
             json=body,
             timeout=5
         )
-
+        print(f"[DEBUG] Upload response: {res.json()}")
         
         return res.json()
 
@@ -131,7 +131,65 @@ async def get_offerings():
             timeout=5
         )
 
-        
+        print(f"[DEBUG] Offerings response: {res.json()}")
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Upload microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Upload microservice unavailable")
+
+
+@router.get("/courses")
+async def get_courses():
+    """
+    Composite layer Upload endpoint.
+    request forwarded to Upload Microservice.
+    """
+
+    if not UPLOAD_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="UPLOAD_SERVICE_URL not set")
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+    print(f"{UPLOAD_SERVICE_URL}/videos/courses")
+    try:
+        # Call Upload Microservice
+        res = requests.post(
+            f"{UPLOAD_SERVICE_URL}/videos/courses",
+            timeout=5
+        )
+
+        print(f"[DEBUG] Courses response: {res.json()}")
+        return res.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Upload microservice timeout")
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Upload microservice unavailable")
+
+
+@router.get("/prof_offer/{prof_uni}")
+async def get_prof_offers(prof_uni: str):
+    """
+    Composite layer Upload endpoint.
+    request forwarded to Upload Microservice.
+    """
+
+    if not UPLOAD_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="UPLOAD_SERVICE_URL not set")
+    if not AUTH_SERVICE_URL:
+        raise HTTPException(status_code=500, detail="AUTH_SERVICE_URL not set")
+    print(f"{UPLOAD_SERVICE_URL}/videos/prof_offer")
+    try:
+        # Call Upload Microservice
+        res = requests.post(
+            f"{UPLOAD_SERVICE_URL}/videos/prof_offer/{prof_uni}",
+            timeout=5
+        )
+
+        print(f"[DEBUG] Prof Offers response: {res.json()}")
         return res.json()
 
     except requests.exceptions.Timeout:
